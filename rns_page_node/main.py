@@ -10,6 +10,9 @@ import threading
 import subprocess
 import RNS
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_INDEX = '''>Default Home Page
 
@@ -23,6 +26,9 @@ You are not authorised to carry out the request.
 
 class PageNode:
     def __init__(self, identity, pagespath, filespath, announce_interval=360, name=None, page_refresh_interval=0, file_refresh_interval=0):
+        self._stop_event = threading.Event()
+        self._lock = threading.Lock()
+        self.logger = logging.getLogger(f"{__name__}.PageNode")
         self.identity = identity
         self.name = name
         self.pagespath = pagespath
@@ -46,12 +52,15 @@ class PageNode:
 
         self.destination.set_link_established_callback(self.on_connect)
 
-        threading.Thread(target=self._announce_loop, daemon=True).start()
-        threading.Thread(target=self._refresh_loop, daemon=True).start()
+        self._announce_thread = threading.Thread(target=self._announce_loop, daemon=True)
+        self._announce_thread.start()
+        self._refresh_thread = threading.Thread(target=self._refresh_loop, daemon=True)
+        self._refresh_thread.start()
 
     def register_pages(self):
-        self.servedpages = []
-        self._scan_pages(self.pagespath)
+        with self._lock:
+            self.servedpages = []
+            self._scan_pages(self.pagespath)
 
         if not os.path.isfile(os.path.join(self.pagespath, "index.mu")):
             self.destination.register_request_handler(
@@ -70,8 +79,9 @@ class PageNode:
             )
 
     def register_files(self):
-        self.servedfiles = []
-        self._scan_files(self.filespath)
+        with self._lock:
+            self.servedfiles = []
+            self._scan_files(self.filespath)
 
         for full_path in self.servedfiles:
             rel = full_path[len(self.filespath):]
@@ -132,25 +142,45 @@ class PageNode:
         pass
 
     def _announce_loop(self):
-        while True:
-            if time.time() - self.last_announce > self.announce_interval:
-                if self.name:
-                    self.destination.announce(app_data=self.name.encode('utf-8'))
-                else:
-                    self.destination.announce()
-                self.last_announce = time.time()
-            time.sleep(1)
+        while not self._stop_event.is_set():
+            try:
+                if time.time() - self.last_announce > self.announce_interval:
+                    if self.name:
+                        self.destination.announce(app_data=self.name.encode('utf-8'))
+                    else:
+                        self.destination.announce()
+                    self.last_announce = time.time()
+                time.sleep(1)
+            except Exception:
+                self.logger.exception("Error in announce loop")
 
     def _refresh_loop(self):
-        while True:
-            now = time.time()
-            if self.page_refresh_interval > 0 and now - self.last_page_refresh > self.page_refresh_interval:
-                self.register_pages()
-                self.last_page_refresh = now
-            if self.file_refresh_interval > 0 and now - self.last_file_refresh > self.file_refresh_interval:
-                self.register_files()
-                self.last_file_refresh = now
-            time.sleep(1)
+        while not self._stop_event.is_set():
+            try:
+                now = time.time()
+                if self.page_refresh_interval > 0 and now - self.last_page_refresh > self.page_refresh_interval:
+                    self.register_pages()
+                    self.last_page_refresh = now
+                if self.file_refresh_interval > 0 and now - self.last_file_refresh > self.file_refresh_interval:
+                    self.register_files()
+                    self.last_file_refresh = now
+                time.sleep(1)
+            except Exception:
+                self.logger.exception("Error in refresh loop")
+
+    def shutdown(self):
+        self.logger.info("Shutting down PageNode...")
+        self._stop_event.set()
+        try:
+            self._announce_thread.join(timeout=5)
+            self._refresh_thread.join(timeout=5)
+        except Exception:
+            self.logger.exception("Error waiting for threads to shut down")
+        try:
+            if hasattr(self.destination, 'close'):
+                self.destination.close()
+        except Exception:
+            self.logger.exception("Error closing RNS destination")
 
 
 def main():
@@ -163,6 +193,7 @@ def main():
     parser.add_argument('-i', '--identity-dir', dest='identity_dir', help='Directory to store node identity', default=os.path.join(os.getcwd(), 'node-config'))
     parser.add_argument('--page-refresh-interval', dest='page_refresh_interval', type=int, default=0, help='Page refresh interval in seconds, 0 disables auto-refresh')
     parser.add_argument('--file-refresh-interval', dest='file_refresh_interval', type=int, default=0, help='File refresh interval in seconds, 0 disables auto-refresh')
+    parser.add_argument('-l', '--log-level', dest='log_level', choices=['DEBUG','INFO','WARNING','ERROR','CRITICAL'], default='INFO', help='Logging level')
     args = parser.parse_args()
 
     configpath = args.configpath
@@ -173,6 +204,8 @@ def main():
     identity_dir = args.identity_dir
     page_refresh_interval = args.page_refresh_interval
     file_refresh_interval = args.file_refresh_interval
+    numeric_level = getattr(logging, args.log_level.upper(), logging.INFO)
+    logging.basicConfig(level=numeric_level, format='%(asctime)s %(name)s [%(levelname)s] %(message)s')
 
     RNS.Reticulum(configpath)
     os.makedirs(identity_dir, exist_ok=True)
@@ -187,13 +220,14 @@ def main():
     os.makedirs(files_dir, exist_ok=True)
 
     node = PageNode(identity, pages_dir, files_dir, announce_interval, node_name, page_refresh_interval, file_refresh_interval)
-    print("Page node running. Press Ctrl-C to exit.")
+    logger.info("Page node running. Press Ctrl-C to exit.")
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("Shutting down.")
+        logger.info("Keyboard interrupt received, shutting down...")
+        node.shutdown()
 
 if __name__ == '__main__':
     main()
