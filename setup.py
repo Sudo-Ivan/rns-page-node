@@ -13,7 +13,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/Sudo-Ivan/rns-page-node',
     packages=find_packages(),
-    python_requires='>=3.7',
+    python_requires='>=3.9',
     install_requires=[
         'rns>=0.9.6,<0.10.0',
     ],
