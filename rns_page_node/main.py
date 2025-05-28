@@ -125,7 +125,7 @@ class PageNode:
         except Exception:
             is_script = False
         if is_script and os.access(file_path, os.X_OK):
-            # Note: You can remove the following try-except block and just serve the page content statically
+            # Note: You can remove the following try-except block if  you just serve static pages.
             try:
                 result = subprocess.run([file_path], stdout=subprocess.PIPE)
                 return result.stdout
