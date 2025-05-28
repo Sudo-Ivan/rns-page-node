@@ -23,7 +23,6 @@ setup(
             'rns-page-node=rns_page_node.main:main',
         ],
     },
-    license='GPL-3.0',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
