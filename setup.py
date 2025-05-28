@@ -14,7 +14,7 @@ setup(
     url='https://github.com/Sudo-Ivan/rns-page-node',
     packages=find_packages(),
     license="GPL-3.0",
-    python_requires='>=3.9',
+    python_requires='>=3.10',
     install_requires=[
         'rns>=0.9.6,<0.10.0',
     ],
