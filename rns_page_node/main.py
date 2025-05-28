@@ -22,7 +22,7 @@ You are not authorised to carry out the request.
 '''
 
 class PageNode:
-    def __init__(self, identity, pagespath, filespath, announce_interval=360, name=None):
+    def __init__(self, identity, pagespath, filespath, announce_interval=360, name=None, page_refresh_interval=0, file_refresh_interval=0):
         self.identity = identity
         self.name = name
         self.pagespath = pagespath
@@ -36,6 +36,10 @@ class PageNode:
         )
         self.announce_interval = announce_interval
         self.last_announce = 0
+        self.page_refresh_interval = page_refresh_interval
+        self.file_refresh_interval = file_refresh_interval
+        self.last_page_refresh = time.time()
+        self.last_file_refresh = time.time()
 
         self.register_pages()
         self.register_files()
@@ -43,6 +47,7 @@ class PageNode:
         self.destination.set_link_established_callback(self.on_connect)
 
         threading.Thread(target=self._announce_loop, daemon=True).start()
+        threading.Thread(target=self._refresh_loop, daemon=True).start()
 
     def register_pages(self):
         self.servedpages = []
@@ -103,12 +108,21 @@ class PageNode:
 
     def serve_page(self, path, data, request_id, link_id, remote_identity, requested_at):
         file_path = path.replace("/page", self.pagespath, 1)
-        if os.access(file_path, os.X_OK):
-            result = subprocess.run([file_path], stdout=subprocess.PIPE)
-            return result.stdout
-        else:
-            with open(file_path, 'rb') as f:
-                return f.read()
+        try:
+            with open(file_path, 'rb') as _f:
+                first_line = _f.readline()
+            is_script = first_line.startswith(b'#!')
+        except Exception:
+            is_script = False
+        if is_script and os.access(file_path, os.X_OK):
+            # Note: You can remove the following try-except block and just serve the page content statically
+            try:
+                result = subprocess.run([file_path], stdout=subprocess.PIPE)
+                return result.stdout
+            except Exception:
+                pass
+        with open(file_path, 'rb') as f:
+            return f.read()
 
     def serve_file(self, path, data, request_id, link_id, remote_identity, requested_at):
         file_path = path.replace("/file", self.filespath, 1)
@@ -127,6 +141,17 @@ class PageNode:
                 self.last_announce = time.time()
             time.sleep(1)
 
+    def _refresh_loop(self):
+        while True:
+            now = time.time()
+            if self.page_refresh_interval > 0 and now - self.last_page_refresh > self.page_refresh_interval:
+                self.register_pages()
+                self.last_page_refresh = now
+            if self.file_refresh_interval > 0 and now - self.last_file_refresh > self.file_refresh_interval:
+                self.register_files()
+                self.last_file_refresh = now
+            time.sleep(1)
+
 
 def main():
     parser = argparse.ArgumentParser(description="Minimal Reticulum Page Node")
@@ -136,6 +161,8 @@ def main():
     parser.add_argument('-n', '--node-name', dest='node_name', help='Node display name', default=None)
     parser.add_argument('-a', '--announce-interval', dest='announce_interval', type=int, help='Announce interval in seconds', default=360)
     parser.add_argument('-i', '--identity-dir', dest='identity_dir', help='Directory to store node identity', default=os.path.join(os.getcwd(), 'node-config'))
+    parser.add_argument('--page-refresh-interval', dest='page_refresh_interval', type=int, default=0, help='Page refresh interval in seconds, 0 disables auto-refresh')
+    parser.add_argument('--file-refresh-interval', dest='file_refresh_interval', type=int, default=0, help='File refresh interval in seconds, 0 disables auto-refresh')
     args = parser.parse_args()
 
     configpath = args.configpath
@@ -144,6 +171,8 @@ def main():
     node_name = args.node_name
     announce_interval = args.announce_interval
     identity_dir = args.identity_dir
+    page_refresh_interval = args.page_refresh_interval
+    file_refresh_interval = args.file_refresh_interval
 
     RNS.Reticulum(configpath)
     os.makedirs(identity_dir, exist_ok=True)
@@ -157,7 +186,7 @@ def main():
     os.makedirs(pages_dir, exist_ok=True)
     os.makedirs(files_dir, exist_ok=True)
 
-    node = PageNode(identity, pages_dir, files_dir, announce_interval, node_name)
+    node = PageNode(identity, pages_dir, files_dir, announce_interval, node_name, page_refresh_interval, file_refresh_interval)
     print("Page node running. Press Ctrl-C to exit.")
 
     try:
