@@ -1,6 +1,6 @@
 [project]
 name = "rns-page-node"
-version = "0.1.0"
+version = "0.1.2"
 license = {file = "LICENSE"}
 description = "A simple way to serve pages and files over the Reticulum network."
 authors = [
