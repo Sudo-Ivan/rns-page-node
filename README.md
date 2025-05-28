@@ -38,6 +38,24 @@ podman run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config
 
 Mounting volumes are optional, you can also copy pages and files to the container `podman cp` or `docker cp`.
 
+## Build
+
+```bash
+make build
+```
+
+Build wheels:
+
+```bash
+make wheel
+```
+
+### Build Wheels in Docker
+
+```bash
+make docker-wheels
+```
+
 ## Page formats
 
 - Micron `.mu`
