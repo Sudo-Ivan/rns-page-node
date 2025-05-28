@@ -53,6 +53,10 @@ Mounting volumes are optional, you can also copy pages and files to the containe
 -a, --announce-interval: The interval to announce the node's presence.
 ```
 
+## To-Do
+
+- [ ] Pypi
+
 ## License
 
 This project incorporates portions of the [NomadNet](https://github.com/markqvist/NomadNet) codebase, which is licensed under the GNU General Public License v3.0 (GPL-3.0). As a derivative work, this project is also distributed under the terms of the GPL-3.0. See the [LICENSE](LICENSE) file for full license.
