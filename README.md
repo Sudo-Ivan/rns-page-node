@@ -5,11 +5,7 @@ A simple way to serve pages and files over the [Reticulum network](https://retic
 ## Usage
 
 ```bash
-pip install git+https://github.com/Sudo-Ivan/rns-page-node.git
-
-# or
-
-pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
+pip install rns-page-node
 ```
 
 ```bash
@@ -56,9 +52,9 @@ make wheel
 make docker-wheels
 ```
 
-## Page formats
+## Pages
 
-- Micron `.mu`
+Supports Micron `.mu` and dynamic pages with `#!` in the micron files.
 
 ## Options
 
@@ -69,11 +65,10 @@ make docker-wheels
 -f, --files-dir: The directory to serve files from.
 -i, --identity-dir: The directory to persist the node's identity.
 -a, --announce-interval: The interval to announce the node's presence.
+-r, --page-refresh-interval: The interval to refresh pages.
+-f, --file-refresh-interval: The interval to refresh files.
+-l, --log-level: The logging level.
 ```
-
-## To-Do
-
-- [ ] Pypi
 
 ## License
 
