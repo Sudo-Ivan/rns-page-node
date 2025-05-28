@@ -1,0 +1,18 @@
+FROM python:3.13-alpine AS builder
+
+RUN apk update
+RUN apk add  build-base libffi-dev cargo pkgconfig
+
+WORKDIR /src
+
+COPY setup.py ./
+COPY README.md ./
+COPY rns_page_node ./rns_page_node
+
+RUN pip install --upgrade pip setuptools wheel
+
+RUN pip wheel . --no-deps --wheel-dir /src/dist
+
+FROM scratch AS dist
+
+COPY --from=builder /src/dist . 

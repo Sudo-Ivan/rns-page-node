@@ -1,0 +1,5 @@
+pages/
+node-config/
+files/
+.ruff_cache/
+__pycache__/
