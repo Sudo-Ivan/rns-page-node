@@ -1,4 +1,5 @@
-FROM python:3.13-alpine
+ARG PYTHON_VERSION=3.13
+FROM python:${PYTHON_VERSION}-alpine
 
 LABEL org.opencontainers.image.source="https://github.com/Sudo-Ivan/rns-page-node"
 LABEL org.opencontainers.image.description="A simple way to serve pages and files over the Reticulum network."
@@ -7,11 +8,12 @@ LABEL org.opencontainers.image.authors="Sudo-Ivan"
 
 WORKDIR /app
 
-COPY requirements.txt ./
-COPY setup.py ./
+RUN pip install poetry
+
+COPY pyproject.toml poetry.lock* ./
 COPY README.md ./
 COPY rns_page_node ./rns_page_node
 
-RUN pip install --upgrade pip setuptools wheel && pip install -r requirements.txt .
+RUN poetry install --no-root --no-interaction --no-ansi
 
-ENTRYPOINT ["rns-page-node"] 
+ENTRYPOINT ["rns-page-node"]

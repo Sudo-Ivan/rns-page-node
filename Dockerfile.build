@@ -5,14 +5,14 @@ RUN apk add  build-base libffi-dev cargo pkgconfig
 
 WORKDIR /src
 
-COPY setup.py ./
+RUN pip install poetry
+
+COPY pyproject.toml ./
 COPY README.md ./
 COPY rns_page_node ./rns_page_node
 
-RUN pip install --upgrade pip setuptools wheel
-
-RUN pip wheel . --no-deps --wheel-dir /src/dist
+RUN poetry build --format wheel
 
 FROM scratch AS dist
 
-COPY --from=builder /src/dist . 
+COPY --from=builder /src/dist .
