@@ -60,3 +60,27 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Extract metadata (tags, labels) for Docker (rootless)
+        id: meta_rootless
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-rootless
+          tags: |
+            type=raw,value=latest-rootless,enable={{is_default_branch}}
+            type=ref,event=branch,prefix=,suffix=-rootless,enable={{is_default_branch}}
+            type=semver,pattern={{version}},suffix=-rootless
+            type=semver,pattern={{major}}.{{minor}},suffix=-rootless
+            type=sha,format=short,suffix=-rootless
+
+      - name: Build and push rootless Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.rootless
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta_rootless.outputs.tags }}
+          labels: ${{ steps.meta_rootless.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
