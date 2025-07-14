@@ -1,5 +1,8 @@
 # Makefile for rns-page-node
 
+# Detect if docker buildx is available
+DOCKER_BUILD := $(shell docker buildx version >/dev/null 2>&1 && echo "docker buildx build" || echo "docker build")
+
 .PHONY: all build sdist wheel clean install lint format docker-wheels docker-build docker-run docker-build-rootless docker-run-rootless help test docker-test
 
 all: build
@@ -26,13 +29,13 @@ format:
 	ruff check --fix .
 
 docker-wheels:
-	docker build --target builder -f Dockerfile.build -t rns-page-node-builder .
+	$(DOCKER_BUILD) --target builder -f Dockerfile.build -t rns-page-node-builder .
 	docker create --name builder-container rns-page-node-builder true
 	docker cp builder-container:/src/dist ./dist
 	docker rm builder-container
 
 docker-build:
-	docker build $(BUILD_ARGS) -f Dockerfile -t rns-page-node:latest .
+	$(DOCKER_BUILD) $(BUILD_ARGS) -f Dockerfile -t rns-page-node:latest .
 
 docker-run:
 	docker run --rm -it \
@@ -47,7 +50,7 @@ docker-run:
 		--announce-interval 360
 
 docker-build-rootless:
-	docker build $(BUILD_ARGS) -f Dockerfile.rootless -t rns-page-node-rootless:latest .
+	$(DOCKER_BUILD) $(BUILD_ARGS) -f Dockerfile.rootless -t rns-page-node-rootless:latest .
 
 docker-run-rootless:
 	docker run --rm -it \
@@ -65,7 +68,7 @@ test:
 	bash tests/run_tests.sh
 
 docker-test:
-	docker build -f tests/Dockerfile.tests -t rns-page-node-tests .
+	$(DOCKER_BUILD) -f tests/Dockerfile.tests -t rns-page-node-tests .
 	docker run --rm rns-page-node-tests
 
 help:
