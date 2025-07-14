@@ -32,7 +32,7 @@ docker-wheels:
 	docker rm builder-container
 
 docker-build:
-	docker build -f Dockerfile -t rns-page-node:latest .
+	docker build $(BUILD_ARGS) -f Dockerfile -t rns-page-node:latest .
 
 docker-run:
 	docker run --rm -it \
@@ -47,7 +47,7 @@ docker-run:
 		--announce-interval 360
 
 docker-build-rootless:
-	docker build -f Dockerfile.rootless -t rns-page-node-rootless:latest .
+	docker build $(BUILD_ARGS) -f Dockerfile.rootless -t rns-page-node-rootless:latest .
 
 docker-run-rootless:
 	docker run --rm -it \
@@ -84,4 +84,4 @@ help:
 	@echo "  docker-build-rootless - build rootless runtime Docker image"
 	@echo "  docker-run-rootless  - run rootless runtime Docker image"
 	@echo "  test                 - run local integration tests"
-	@echo "  docker-test          - build and run integration tests in Docker" 
+	@echo "  docker-test          - build and run integration tests in Docker"
