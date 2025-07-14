@@ -56,6 +56,44 @@ make docker-wheels
 
 Supports Micron `.mu` and dynamic pages with `#!` in the micron files.
 
+## Statistics Tracking
+
+The node now includes comprehensive statistics tracking for monitoring peer connections and page/file requests:
+
+### Command Line Options for Stats
+
+```bash
+# Print stats every 60 seconds
+rns-page-node --stats-interval 60
+
+# Save stats to JSON file on shutdown
+rns-page-node --save-stats node_stats.json
+
+# Actively write stats to file (live updates)
+rns-page-node --stats-file stats.json
+
+# Combined: live stats file + periodic display + final save
+rns-page-node --stats-file stats.json --stats-interval 300 --save-stats final_stats.json
+```
+
+### Docker Stats Usage
+
+```bash
+# With periodic stats display
+docker run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config:/app/node-config -v ./config:/app/config ghcr.io/sudo-ivan/rns-page-node:latest --stats-interval 60
+
+# Save stats to mounted volume
+docker run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config:/app/node-config -v ./config:/app/config -v ./stats:/app/stats ghcr.io/sudo-ivan/rns-page-node:latest --save-stats /app/stats/node_stats.json
+```
+
+### Tracked Metrics
+
+- **Connection Statistics**: Total connections, active connections, peer tracking
+- **Request Statistics**: Page requests, file requests, requests by path and peer
+- **Performance Metrics**: Requests per hour, uptime, response patterns
+- **Historical Data**: Recent request history, hourly/daily aggregations
+- **Top Content**: Most requested pages and files, most active peers
+
 ## Options
 
 ```
@@ -65,9 +103,11 @@ Supports Micron `.mu` and dynamic pages with `#!` in the micron files.
 -f, --files-dir: The directory to serve files from.
 -i, --identity-dir: The directory to persist the node's identity.
 -a, --announce-interval: The interval to announce the node's presence.
--r, --page-refresh-interval: The interval to refresh pages.
--f, --file-refresh-interval: The interval to refresh files.
+--page-refresh-interval: The interval to refresh pages (seconds, 0 disables).
+--file-refresh-interval: The interval to refresh files (seconds, 0 disables).
 -l, --log-level: The logging level.
+--stats-interval: Print stats every N seconds (0 disables).
+--save-stats: Save stats to JSON file on shutdown.
 ```
 
 ## License
