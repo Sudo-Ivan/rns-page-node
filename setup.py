@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="rns-page-node",
-    version="0.2.0",
+    version="1.0.0",
     author="Sudo-Ivan",
     author_email="",
     description="A simple way to serve pages and files over the Reticulum network.",
