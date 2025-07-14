@@ -1,6 +1,6 @@
 [project]
 name = "rns-page-node"
-version = "0.1.2"
+version = "0.2.0"
 license = "GPL-3.0-only"
 description = "A simple way to serve pages and files over the Reticulum network."
 authors = [
@@ -9,7 +9,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "rns (>=0.9.6,<0.10.0)"
+    "rns (>=1.0.0,<1.5.0)"
 ]
 
 [project.scripts]
@@ -20,6 +20,6 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.11.11"
-safety = "^3.5.2"
+ruff = "^0.12.3"
+safety = "^3.6.0"
 
