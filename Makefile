@@ -1,6 +1,6 @@
 # Makefile for rns-page-node
 
-.PHONY: all build sdist wheel clean install lint format docker-wheels docker-build docker-run docker-build-rootless docker-run-rootless help
+.PHONY: all build sdist wheel clean install lint format docker-wheels docker-build docker-run docker-build-rootless docker-run-rootless help test docker-test
 
 all: build
 
@@ -61,6 +61,13 @@ docker-run-rootless:
 		--identity-dir /app/node-config \
 		--announce-interval 360
 
+test:
+	bash tests/run_tests.sh
+
+docker-test:
+	docker build -f tests/Dockerfile.tests -t rns-page-node-tests .
+	docker run --rm rns-page-node-tests
+
 help:
 	@echo "Makefile commands:"
 	@echo "  all            - alias for build"
@@ -75,4 +82,6 @@ help:
 	@echo "  docker-build   - build runtime Docker image"
 	@echo "  docker-run     - run runtime Docker image"
 	@echo "  docker-build-rootless - build rootless runtime Docker image"
-	@echo "  docker-run-rootless  - run rootless runtime Docker image" 
+	@echo "  docker-run-rootless  - run rootless runtime Docker image"
+	@echo "  test                 - run local integration tests"
+	@echo "  docker-test          - build and run integration tests in Docker" 
