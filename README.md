@@ -1,5 +1,9 @@
 # RNS Page Node
 
+[![Build and Publish Docker Image](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker.yml/badge.svg)](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker.yml)
+[![Docker Build Test](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker-test.yml/badge.svg)](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker-test.yml)
+[![DeepSource](https://app.deepsource.com/gh/Sudo-Ivan/rns-page-node.svg/?label=active+issues&show_trend=true&token=kajzd0SjJXSzkuN3z3kG9gQw)](https://app.deepsource.com/gh/Sudo-Ivan/rns-page-node/)
+
 A simple way to serve pages and files over the [Reticulum network](https://reticulum.network/). Drop-in replacement for [NomadNet](https://github.com/markqvist/NomadNet) nodes that primarily serve pages and files.
 
 ## Usage
