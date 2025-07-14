@@ -8,12 +8,17 @@ LABEL org.opencontainers.image.authors="Sudo-Ivan"
 
 WORKDIR /app
 
+RUN apk add --no-cache gcc python3-dev musl-dev linux-headers
+
 RUN pip install poetry
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 COPY pyproject.toml poetry.lock* ./
 COPY README.md ./
 COPY rns_page_node ./rns_page_node
 
-RUN poetry install --no-root --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi
 
-ENTRYPOINT ["rns-page-node"]
+ENV PATH="/app/.venv/bin:$PATH"
+
+ENTRYPOINT ["poetry", "run", "rns-page-node"]
