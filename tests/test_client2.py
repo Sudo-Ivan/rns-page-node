@@ -34,7 +34,7 @@ server_identity = RNS.Identity.recall(destination_hash)
 print(f"Recalled server identity for {DESTINATION_HEX}")
 
 destination = RNS.Destination(
-    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node"
+    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node",
 )
 link = RNS.Link(destination)
 
@@ -53,9 +53,9 @@ def on_page(response):
 
 
 link.set_link_established_callback(
-    lambda l: l.request("/page/index.mu", None, response_callback=on_page)
+    lambda link: link.request("/page/index.mu", None, response_callback=on_page),
 )
-link.set_link_closed_callback(lambda l: done_event.set())
+link.set_link_closed_callback(lambda link: done_event.set())
 
 if not done_event.wait(timeout=30):
     print("Timed out waiting for page", file=sys.stderr)

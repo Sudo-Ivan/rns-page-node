@@ -20,7 +20,7 @@ server_identity = RNS.Identity.from_file(identity_file)
 
 # Create a destination to the server node
 destination = RNS.Destination(
-    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node"
+    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node",
 )
 
 # Ensure we know a path to the destination
@@ -90,7 +90,7 @@ def on_link_established(link):
 
 # Register callbacks
 global_link.set_link_established_callback(on_link_established)
-global_link.set_link_closed_callback(lambda l: done_event.set())
+global_link.set_link_closed_callback(lambda link: done_event.set())
 
 # Wait for responses or timeout
 if not done_event.wait(timeout=30):
