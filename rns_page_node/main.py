@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Minimal Reticulum Page Node
 Serves .mu pages and files over RNS.
 """
@@ -44,7 +43,7 @@ class PageNode:
         self.pagespath = pagespath
         self.filespath = filespath
         self.destination = RNS.Destination(
-            identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node"
+            identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node",
         )
         self.announce_interval = announce_interval
         self.last_announce = 0
@@ -59,7 +58,7 @@ class PageNode:
         self.destination.set_link_established_callback(self.on_connect)
 
         self._announce_thread = threading.Thread(
-            target=self._announce_loop, daemon=True
+            target=self._announce_loop, daemon=True,
         )
         self._announce_thread.start()
         self._refresh_thread = threading.Thread(target=self._refresh_loop, daemon=True)
@@ -123,12 +122,12 @@ class PageNode:
 
     @staticmethod
     def serve_default_index(
-        path, data, request_id, link_id, remote_identity, requested_at
+        path, data, request_id, link_id, remote_identity, requested_at,
     ):
         return DEFAULT_INDEX.encode("utf-8")
 
     def serve_page(
-        self, path, data, request_id, link_id, remote_identity, requested_at
+        self, path, data, request_id, link_id, remote_identity, requested_at,
     ):
         file_path = path.replace("/page", self.pagespath, 1)
         try:
@@ -149,7 +148,7 @@ class PageNode:
             return f.read()
 
     def serve_file(
-        self, path, data, request_id, link_id, remote_identity, requested_at
+        self, path, data, request_id, link_id, remote_identity, requested_at,
     ):
         file_path = path.replace("/file", self.filespath, 1)
         return [
@@ -211,7 +210,7 @@ class PageNode:
 def main():
     parser = argparse.ArgumentParser(description="Minimal Reticulum Page Node")
     parser.add_argument(
-        "-c", "--config", dest="configpath", help="Reticulum config path", default=None
+        "-c", "--config", dest="configpath", help="Reticulum config path", default=None,
     )
     parser.add_argument(
         "-p",
@@ -228,7 +227,7 @@ def main():
         default=os.path.join(os.getcwd(), "files"),
     )
     parser.add_argument(
-        "-n", "--node-name", dest="node_name", help="Node display name", default=None
+        "-n", "--node-name", dest="node_name", help="Node display name", default=None,
     )
     parser.add_argument(
         "-a",
@@ -279,7 +278,7 @@ def main():
     file_refresh_interval = args.file_refresh_interval
     numeric_level = getattr(logging, args.log_level.upper(), logging.INFO)
     logging.basicConfig(
-        level=numeric_level, format="%(asctime)s %(name)s [%(levelname)s] %(message)s"
+        level=numeric_level, format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
     )
 
     RNS.Reticulum(configpath)
@@ -304,6 +303,8 @@ def main():
         file_refresh_interval,
     )
     logger.info("Page node running. Press Ctrl-C to exit.")
+    logger.info("Node address: %s", RNS.prettyhexrep(node.destination.hash))
+
 
     try:
         while True:
