@@ -25,7 +25,7 @@ rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --
 ### Docker/Podman
 
 ```bash
-docker run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config:/app/node-config -v ./config:/app/config ghcr.io/sudo-ivan/rns-page-node:latest
+docker run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config:/app/node-config -v ./config:/root/.reticulum ghcr.io/sudo-ivan/rns-page-node:latest
 ```
 
 ### Docker/Podman Rootless
