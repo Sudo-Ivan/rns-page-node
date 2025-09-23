@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_INDEX = """>Default Home Page
 
-This node is serving pages using page node, but the home page file (index.mu) was not found in the pages directory. Please add an index.mu file to customize the home page.
+This node is serving pages using rns-page-node, but the home page file (index.mu) was not found in the pages directory. Please add an index.mu file to customize the home page.
 """
 
 DEFAULT_NOTALLOWED = """>Request Not Allowed
