@@ -142,7 +142,7 @@ class PageNode:
             try:
                 env = os.environ.copy()
                 if remote_identity:
-                    env["remote_identity"] = RNS.hexrep(remote_identity, delimit=False)
+                    env["remote_identity"] = RNS.hexrep(remote_identity.hash, delimit=False)
                 if data and isinstance(data, bytes):
                     try:
                         data_str = data.decode('utf-8')
