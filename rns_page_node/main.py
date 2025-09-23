@@ -140,7 +140,26 @@ class PageNode:
             # Note: The execution of file_path is intentional here, as some pages are designed to be executable scripts.
             # This is acknowledged as a potential security risk if untrusted input can control file_path.
             try:
-                result = subprocess.run([file_path], stdout=subprocess.PIPE, check=True)  # noqa: S603
+                env = os.environ.copy()
+                if remote_identity:
+                    env["remote_identity"] = RNS.hexrep(remote_identity, delimit=False)
+                if data and isinstance(data, bytes):
+                    try:
+                        data_str = data.decode('utf-8')
+                        if data_str:
+                            pairs = data_str.split('&')
+                            for pair in pairs:
+                                if '=' in pair:
+                                    key, value = pair.split('=', 1)
+                                    if key.startswith('field_'):
+                                        env[key] = value
+                                    elif key.startswith('var_'):
+                                        env[key] = value
+                                    elif key == 'action':
+                                        env['var_action'] = value
+                    except Exception:
+                        self.logger.exception("Error parsing request data")
+                result = subprocess.run([file_path], stdout=subprocess.PIPE, check=True, env=env)  # noqa: S603
                 return result.stdout
             except Exception:
                 self.logger.exception("Error executing script page")
