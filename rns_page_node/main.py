@@ -69,6 +69,8 @@ class PageNode:
             self.servedpages = []
             self._scan_pages(self.pagespath)
 
+        pagespath = os.path.join(self.pagespath, "")
+
         if not os.path.isfile(os.path.join(self.pagespath, "index.mu")):
             self.destination.register_request_handler(
                 "/page/index.mu",
@@ -77,7 +79,9 @@ class PageNode:
             )
 
         for full_path in self.servedpages:
-            rel = full_path[len(self.pagespath) :]
+            rel = full_path[len(pagespath) :]
+            if not rel.startswith("/"):
+                rel = "/" + rel
             request_path = f"/page{rel}"
             self.destination.register_request_handler(
                 request_path,
@@ -90,8 +94,12 @@ class PageNode:
             self.servedfiles = []
             self._scan_files(self.filespath)
 
+        filespath = os.path.join(self.filespath, "")
+
         for full_path in self.servedfiles:
-            rel = full_path[len(self.filespath) :]
+            rel = full_path[len(filespath) :]
+            if not rel.startswith("/"):
+                rel = "/" + rel
             request_path = f"/file{rel}"
             self.destination.register_request_handler(
                 request_path,
@@ -129,7 +137,8 @@ class PageNode:
     def serve_page(
         self, path, data, request_id, link_id, remote_identity, requested_at,
     ):
-        file_path = path.replace("/page", self.pagespath, 1)
+        pagespath = os.path.join(self.pagespath, "")
+        file_path = pagespath + path[5:]
         try:
             with open(file_path, "rb") as _f:
                 first_line = _f.readline()
@@ -174,7 +183,8 @@ class PageNode:
     def serve_file(
         self, path, data, request_id, link_id, remote_identity, requested_at,
     ):
-        file_path = path.replace("/file", self.filespath, 1)
+        filespath = os.path.join(self.filespath, "")
+        file_path = filespath + path[6:]
         return [
             open(file_path, "rb"),
             {"name": os.path.basename(file_path).encode("utf-8")},
