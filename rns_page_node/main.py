@@ -147,7 +147,10 @@ class PageNode:
                     try:
                         data_str = data.decode('utf-8')
                         if data_str:
-                            pairs = data_str.split('&')
+                            if '|' in data_str and '&' not in data_str:
+                                pairs = data_str.split('|')
+                            else:
+                                pairs = data_str.split('&')
                             for pair in pairs:
                                 if '=' in pair:
                                     key, value = pair.split('=', 1)
@@ -157,6 +160,8 @@ class PageNode:
                                         env[key] = value
                                     elif key == 'action':
                                         env['var_action'] = value
+                                    else:
+                                        env[f'field_{key}'] = value
                     except Exception:
                         self.logger.exception("Error parsing request data")
                 result = subprocess.run([file_path], stdout=subprocess.PIPE, check=True, env=env)  # noqa: S603
