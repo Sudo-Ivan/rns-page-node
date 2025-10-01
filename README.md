@@ -9,10 +9,26 @@ A simple way to serve pages and files over the [Reticulum network](https://retic
 ## Usage
 
 ```bash
+# Pip
+# May require --break-system-packages
+
 pip install rns-page-node
+
+# Pipx
+
+pipx install rns-page-node
+
+# uv
+
+uv pip install rns-page-node
+
+# Git
+
+pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
 ```
 
 ```bash
+# will use current directory for pages and files
 rns-page-node
 ```
 
@@ -58,7 +74,7 @@ make docker-wheels
 
 ## Pages
 
-Supports Micron `.mu` and dynamic pages with `#!` in the micron files.
+Supports dynamic pages but not request data parsing yet.
 
 ## Options
 
