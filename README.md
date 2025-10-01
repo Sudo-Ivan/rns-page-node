@@ -22,6 +22,8 @@ pipx install rns-page-node
 
 # uv
 
+uv venv
+source .venv/bin/activate
 uv pip install rns-page-node
 
 # Git
