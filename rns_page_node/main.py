@@ -1,21 +1,21 @@
-"""Minimal Reticulum Page Node
+"""Minimal Reticulum Page Node.
+
 Serves .mu pages and files over RNS.
 """
 
 import argparse
-import logging
 import os
 import subprocess
 import threading
 import time
+from pathlib import Path
 
 import RNS
 
-logger = logging.getLogger(__name__)
-
 DEFAULT_INDEX = """>Default Home Page
 
-This node is serving pages using rns-page-node, but the home page file (index.mu) was not found in the pages directory. Please add an index.mu file to customize the home page.
+This node is serving pages using rns-page-node, but index.mu was not found.
+Please add an index.mu file to customize the home page.
 """
 
 DEFAULT_NOTALLOWED = """>Request Not Allowed
@@ -25,6 +25,8 @@ You are not authorised to carry out the request.
 
 
 class PageNode:
+    """A Reticulum page node that serves .mu pages and files over RNS."""
+
     def __init__(
         self,
         identity,
@@ -35,15 +37,30 @@ class PageNode:
         page_refresh_interval=0,
         file_refresh_interval=0,
     ):
+        """Initialize the PageNode.
+
+        Args:
+            identity: RNS Identity for the node
+            pagespath: Path to directory containing .mu pages
+            filespath: Path to directory containing files to serve
+            announce_interval: Seconds between announcements (default: 360)
+            name: Display name for the node (optional)
+            page_refresh_interval: Seconds between page rescans (0 = disabled)
+            file_refresh_interval: Seconds between file rescans (0 = disabled)
+
+        """
         self._stop_event = threading.Event()
         self._lock = threading.Lock()
-        self.logger = logging.getLogger(f"{__name__}.PageNode")
         self.identity = identity
         self.name = name
         self.pagespath = pagespath
         self.filespath = filespath
         self.destination = RNS.Destination(
-            identity, RNS.Destination.IN, RNS.Destination.SINGLE, "nomadnetwork", "node",
+            identity,
+            RNS.Destination.IN,
+            RNS.Destination.SINGLE,
+            "nomadnetwork",
+            "node",
         )
         self.announce_interval = announce_interval
         self.last_announce = 0
@@ -58,20 +75,22 @@ class PageNode:
         self.destination.set_link_established_callback(self.on_connect)
 
         self._announce_thread = threading.Thread(
-            target=self._announce_loop, daemon=True,
+            target=self._announce_loop,
+            daemon=True,
         )
         self._announce_thread.start()
         self._refresh_thread = threading.Thread(target=self._refresh_loop, daemon=True)
         self._refresh_thread.start()
 
     def register_pages(self):
+        """Scan pages directory and register request handlers for all .mu files."""
         with self._lock:
             self.servedpages = []
             self._scan_pages(self.pagespath)
 
-        pagespath = os.path.join(self.pagespath, "")
+        pagespath = Path(self.pagespath)
 
-        if not os.path.isfile(os.path.join(self.pagespath, "index.mu")):
+        if not (pagespath / "index.mu").is_file():
             self.destination.register_request_handler(
                 "/page/index.mu",
                 response_generator=self.serve_default_index,
@@ -79,7 +98,7 @@ class PageNode:
             )
 
         for full_path in self.servedpages:
-            rel = full_path[len(pagespath) :]
+            rel = full_path[len(str(pagespath)) :]
             if not rel.startswith("/"):
                 rel = "/" + rel
             request_path = f"/page{rel}"
@@ -90,14 +109,15 @@ class PageNode:
             )
 
     def register_files(self):
+        """Scan files directory and register request handlers for all files."""
         with self._lock:
             self.servedfiles = []
             self._scan_files(self.filespath)
 
-        filespath = os.path.join(self.filespath, "")
+        filespath = Path(self.filespath)
 
         for full_path in self.servedfiles:
-            rel = full_path[len(filespath) :]
+            rel = full_path[len(str(filespath)) :]
             if not rel.startswith("/"):
                 rel = "/" + rel
             request_path = f"/file{rel}"
@@ -109,89 +129,115 @@ class PageNode:
             )
 
     def _scan_pages(self, base):
-        for entry in os.listdir(base):
-            if entry.startswith("."):
+        base_path = Path(base)
+        for entry in base_path.iterdir():
+            if entry.name.startswith("."):
                 continue
-            path = os.path.join(base, entry)
-            if os.path.isdir(path):
-                self._scan_pages(path)
-            elif os.path.isfile(path) and not entry.endswith(".allowed"):
-                self.servedpages.append(path)
+            if entry.is_dir():
+                self._scan_pages(str(entry))
+            elif entry.is_file() and not entry.name.endswith(".allowed"):
+                self.servedpages.append(str(entry))
 
     def _scan_files(self, base):
-        for entry in os.listdir(base):
-            if entry.startswith("."):
+        base_path = Path(base)
+        for entry in base_path.iterdir():
+            if entry.name.startswith("."):
                 continue
-            path = os.path.join(base, entry)
-            if os.path.isdir(path):
-                self._scan_files(path)
-            elif os.path.isfile(path):
-                self.servedfiles.append(path)
+            if entry.is_dir():
+                self._scan_files(str(entry))
+            elif entry.is_file():
+                self.servedfiles.append(str(entry))
 
     @staticmethod
     def serve_default_index(
-        path, data, request_id, link_id, remote_identity, requested_at,
+        _path,
+        _data,
+        _request_id,
+        _link_id,
+        _remote_identity,
+        _requested_at,
     ):
+        """Serve the default index page when no index.mu file exists."""
         return DEFAULT_INDEX.encode("utf-8")
 
     def serve_page(
-        self, path, data, request_id, link_id, remote_identity, requested_at,
+        self,
+        path,
+        data,
+        _request_id,
+        _link_id,
+        remote_identity,
+        _requested_at,
     ):
-        pagespath = os.path.join(self.pagespath, "")
-        file_path = pagespath + path[5:]
+        """Serve a .mu page file, executing it as a script if it has a shebang."""
+        pagespath = Path(self.pagespath)
+        relative_path = path[6:] if path.startswith("/page/") else path[5:]
+        file_path = pagespath / relative_path
         try:
-            with open(file_path, "rb") as _f:
+            with file_path.open("rb") as _f:
                 first_line = _f.readline()
             is_script = first_line.startswith(b"#!")
         except Exception:
             is_script = False
-        if is_script and os.access(file_path, os.X_OK):
-            # Note: The execution of file_path is intentional here, as some pages are designed to be executable scripts.
-            # This is acknowledged as a potential security risk if untrusted input can control file_path.
+        if is_script and os.access(str(file_path), os.X_OK):
             try:
                 env = os.environ.copy()
                 if remote_identity:
-                    env["remote_identity"] = RNS.hexrep(remote_identity.hash, delimit=False)
+                    env["remote_identity"] = RNS.hexrep(
+                        remote_identity.hash,
+                        delimit=False,
+                    )
                 if data and isinstance(data, bytes):
                     try:
-                        data_str = data.decode('utf-8')
+                        data_str = data.decode("utf-8")
                         if data_str:
-                            if '|' in data_str and '&' not in data_str:
-                                pairs = data_str.split('|')
+                            if "|" in data_str and "&" not in data_str:
+                                pairs = data_str.split("|")
                             else:
-                                pairs = data_str.split('&')
+                                pairs = data_str.split("&")
                             for pair in pairs:
-                                if '=' in pair:
-                                    key, value = pair.split('=', 1)
-                                    if key.startswith('field_'):
+                                if "=" in pair:
+                                    key, value = pair.split("=", 1)
+                                    if key.startswith(("field_", "var_")):
                                         env[key] = value
-                                    elif key.startswith('var_'):
-                                        env[key] = value
-                                    elif key == 'action':
-                                        env['var_action'] = value
+                                    elif key == "action":
+                                        env["var_action"] = value
                                     else:
-                                        env[f'field_{key}'] = value
-                    except Exception:
-                        self.logger.exception("Error parsing request data")
-                result = subprocess.run([file_path], stdout=subprocess.PIPE, check=True, env=env)  # noqa: S603
+                                        env[f"field_{key}"] = value
+                    except Exception as e:
+                        RNS.log(f"Error parsing request data: {e}", RNS.LOG_ERROR)
+                result = subprocess.run(  # noqa: S603
+                    [str(file_path)],
+                    stdout=subprocess.PIPE,
+                    check=True,
+                    env=env,
+                )
                 return result.stdout
-            except Exception:
-                self.logger.exception("Error executing script page")
-        with open(file_path, "rb") as f:
+            except Exception as e:
+                RNS.log(f"Error executing script page: {e}", RNS.LOG_ERROR)
+        with file_path.open("rb") as f:
             return f.read()
 
     def serve_file(
-        self, path, data, request_id, link_id, remote_identity, requested_at,
+        self,
+        path,
+        _data,
+        _request_id,
+        _link_id,
+        _remote_identity,
+        _requested_at,
     ):
-        filespath = os.path.join(self.filespath, "")
-        file_path = filespath + path[6:]
+        """Serve a file from the files directory."""
+        filespath = Path(self.filespath)
+        relative_path = path[6:] if path.startswith("/file/") else path[5:]
+        file_path = filespath / relative_path
         return [
-            open(file_path, "rb"),
-            {"name": os.path.basename(file_path).encode("utf-8")},
+            file_path.open("rb"),
+            {"name": file_path.name.encode("utf-8")},
         ]
 
     def on_connect(self, link):
-        pass
+        """Handle new link connections."""
 
     def _announce_loop(self):
         try:
@@ -203,8 +249,8 @@ class PageNode:
                         self.destination.announce()
                     self.last_announce = time.time()
                 time.sleep(1)
-        except Exception:
-            self.logger.exception("Error in announce loop")
+        except Exception as e:
+            RNS.log(f"Error in announce loop: {e}", RNS.LOG_ERROR)
 
     def _refresh_loop(self):
         try:
@@ -223,45 +269,55 @@ class PageNode:
                     self.register_files()
                     self.last_file_refresh = now
                 time.sleep(1)
-        except Exception:
-            self.logger.exception("Error in refresh loop")
+        except Exception as e:
+            RNS.log(f"Error in refresh loop: {e}", RNS.LOG_ERROR)
 
     def shutdown(self):
-        self.logger.info("Shutting down PageNode...")
+        """Gracefully shutdown the PageNode and cleanup resources."""
+        RNS.log("Shutting down PageNode...", RNS.LOG_INFO)
         self._stop_event.set()
         try:
             self._announce_thread.join(timeout=5)
             self._refresh_thread.join(timeout=5)
-        except Exception:
-            self.logger.exception("Error waiting for threads to shut down")
+        except Exception as e:
+            RNS.log(f"Error waiting for threads to shut down: {e}", RNS.LOG_ERROR)
         try:
             if hasattr(self.destination, "close"):
                 self.destination.close()
-        except Exception:
-            self.logger.exception("Error closing RNS destination")
+        except Exception as e:
+            RNS.log(f"Error closing RNS destination: {e}", RNS.LOG_ERROR)
 
 
 def main():
+    """Run the RNS page node application."""
     parser = argparse.ArgumentParser(description="Minimal Reticulum Page Node")
     parser.add_argument(
-        "-c", "--config", dest="configpath", help="Reticulum config path", default=None,
+        "-c",
+        "--config",
+        dest="configpath",
+        help="Reticulum config path",
+        default=None,
     )
     parser.add_argument(
         "-p",
         "--pages-dir",
         dest="pages_dir",
         help="Pages directory",
-        default=os.path.join(os.getcwd(), "pages"),
+        default=str(Path.cwd() / "pages"),
     )
     parser.add_argument(
         "-f",
         "--files-dir",
         dest="files_dir",
         help="Files directory",
-        default=os.path.join(os.getcwd(), "files"),
+        default=str(Path.cwd() / "files"),
     )
     parser.add_argument(
-        "-n", "--node-name", dest="node_name", help="Node display name", default=None,
+        "-n",
+        "--node-name",
+        dest="node_name",
+        help="Node display name",
+        default=None,
     )
     parser.add_argument(
         "-a",
@@ -276,7 +332,7 @@ def main():
         "--identity-dir",
         dest="identity_dir",
         help="Directory to store node identity",
-        default=os.path.join(os.getcwd(), "node-config"),
+        default=str(Path.cwd() / "node-config"),
     )
     parser.add_argument(
         "--page-refresh-interval",
@@ -310,22 +366,18 @@ def main():
     identity_dir = args.identity_dir
     page_refresh_interval = args.page_refresh_interval
     file_refresh_interval = args.file_refresh_interval
-    numeric_level = getattr(logging, args.log_level.upper(), logging.INFO)
-    logging.basicConfig(
-        level=numeric_level, format="%(asctime)s %(name)s [%(levelname)s] %(message)s",
-    )
 
     RNS.Reticulum(configpath)
-    os.makedirs(identity_dir, exist_ok=True)
-    identity_file = os.path.join(identity_dir, "identity")
-    if os.path.isfile(identity_file):
-        identity = RNS.Identity.from_file(identity_file)
+    Path(identity_dir).mkdir(parents=True, exist_ok=True)
+    identity_file = Path(identity_dir) / "identity"
+    if identity_file.is_file():
+        identity = RNS.Identity.from_file(str(identity_file))
     else:
         identity = RNS.Identity()
-        identity.to_file(identity_file)
+        identity.to_file(str(identity_file))
 
-    os.makedirs(pages_dir, exist_ok=True)
-    os.makedirs(files_dir, exist_ok=True)
+    Path(pages_dir).mkdir(parents=True, exist_ok=True)
+    Path(files_dir).mkdir(parents=True, exist_ok=True)
 
     node = PageNode(
         identity,
@@ -336,15 +388,14 @@ def main():
         page_refresh_interval,
         file_refresh_interval,
     )
-    logger.info("Page node running. Press Ctrl-C to exit.")
-    logger.info("Node address: %s", RNS.prettyhexrep(node.destination.hash))
-
+    RNS.log("Page node running. Press Ctrl-C to exit.", RNS.LOG_INFO)
+    RNS.log(f"Node address: {RNS.prettyhexrep(node.destination.hash)}", RNS.LOG_INFO)
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        logger.info("Keyboard interrupt received, shutting down...")
+        RNS.log("Keyboard interrupt received, shutting down...", RNS.LOG_INFO)
         node.shutdown()
 
 
