@@ -1,5 +1,7 @@
 # RNS Page Node
 
+[Русская](README.ru.md)
+
 [![Build and Publish Docker Image](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker.yml/badge.svg)](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker.yml)
 [![Docker Build Test](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker-test.yml/badge.svg)](https://github.com/Sudo-Ivan/rns-page-node/actions/workflows/docker-test.yml)
 [![DeepSource](https://app.deepsource.com/gh/Sudo-Ivan/rns-page-node.svg/?label=active+issues&show_trend=true&token=kajzd0SjJXSzkuN3z3kG9gQw)](https://app.deepsource.com/gh/Sudo-Ivan/rns-page-node/)
