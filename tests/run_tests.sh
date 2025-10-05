@@ -9,10 +9,32 @@ rm -rf config node-config pages files node.log
 mkdir -p config node-config pages files
 
 # Create a sample page and a test file
-cat > pages/index.mu << EOF
->Test Page
-This is a test page.
+cat > pages/index.mu << 'EOF'
+#!/usr/bin/env python3
+import os
+
+print("`F0f0`_`Test Page`_")
+print("This is a test page with environment variable support.")
+print()
+
+print("`F0f0`_`Environment Variables`_")
+params = []
+for key, value in os.environ.items():
+    if key.startswith(('field_', 'var_')):
+        params.append(f"- `Faaa`{key}`f: `F0f0`{value}`f")
+
+if params:
+    print("\n".join(params))
+else:
+    print("- No parameters received")
+
+print()
+print("`F0f0`_`Remote Identity`_")
+remote_id = os.environ.get('remote_identity', '33aff86b736acd47dca07e84630fd192')  # Mock for testing
+print(f"`Faaa`{remote_id}`f")
 EOF
+
+chmod +x pages/index.mu
 
 cat > files/text.txt << EOF
 This is a test file.
