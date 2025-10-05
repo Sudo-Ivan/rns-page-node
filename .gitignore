@@ -3,3 +3,12 @@ node-config/
 files/
 .ruff_cache/
 __pycache__/
+dist/
+*.egg-info/
+.ruff_cache/
+.venv/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
