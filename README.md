@@ -8,6 +8,16 @@
 
 A simple way to serve pages and files over the [Reticulum network](https://reticulum.network/). Drop-in replacement for [NomadNet](https://github.com/markqvist/NomadNet) nodes that primarily serve pages and files.
 
+## Features
+
+- Static and Dynamic pages.
+- Serve files
+- Simple
+
+## To-Do
+
+- Parameter parsing for forums, chat etc...
+
 ## Usage
 
 ```bash
