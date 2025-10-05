@@ -170,9 +170,12 @@ class PageNode:
         _requested_at,
     ):
         """Serve a .mu page file, executing it as a script if it has a shebang."""
-        pagespath = Path(self.pagespath)
+        pagespath = Path(self.pagespath).resolve()
         relative_path = path[6:] if path.startswith("/page/") else path[5:]
-        file_path = pagespath / relative_path
+        file_path = (pagespath / relative_path).resolve()
+
+        if not str(file_path).startswith(str(pagespath)):
+            return DEFAULT_NOTALLOWED.encode("utf-8")
         try:
             with file_path.open("rb") as _f:
                 first_line = _f.readline()
@@ -228,9 +231,13 @@ class PageNode:
         _requested_at,
     ):
         """Serve a file from the files directory."""
-        filespath = Path(self.filespath)
+        filespath = Path(self.filespath).resolve()
         relative_path = path[6:] if path.startswith("/file/") else path[5:]
-        file_path = filespath / relative_path
+        file_path = (filespath / relative_path).resolve()
+
+        if not str(file_path).startswith(str(filespath)):
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+
         return [
             file_path.open("rb"),
             {"name": file_path.name.encode("utf-8")},
