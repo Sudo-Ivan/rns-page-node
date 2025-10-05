@@ -190,23 +190,39 @@ class PageNode:
                         remote_identity.hash,
                         delimit=False,
                     )
-                if data and isinstance(data, bytes):
+                if data:
                     try:
-                        data_str = data.decode("utf-8")
-                        if data_str:
-                            if "|" in data_str and "&" not in data_str:
-                                pairs = data_str.split("|")
-                            else:
-                                pairs = data_str.split("&")
-                            for pair in pairs:
-                                if "=" in pair:
-                                    key, value = pair.split("=", 1)
+                        RNS.log(f"Processing request data: {data} (type: {type(data)})", RNS.LOG_DEBUG)
+                        if isinstance(data, dict):
+                            RNS.log(f"Data is dictionary with {len(data)} items", RNS.LOG_DEBUG)
+                            for key, value in data.items():
+                                if isinstance(value, str):
                                     if key.startswith(("field_", "var_")):
                                         env[key] = value
+                                        RNS.log(f"Set env[{key}] = {value}", RNS.LOG_DEBUG)
                                     elif key == "action":
                                         env["var_action"] = value
+                                        RNS.log(f"Set env[var_action] = {value}", RNS.LOG_DEBUG)
                                     else:
                                         env[f"field_{key}"] = value
+                                        RNS.log(f"Set env[field_{key}] = {value}", RNS.LOG_DEBUG)
+                        elif isinstance(data, bytes):
+                            data_str = data.decode("utf-8")
+                            RNS.log(f"Data is bytes, decoded to: {data_str}", RNS.LOG_DEBUG)
+                            if data_str:
+                                if "|" in data_str and "&" not in data_str:
+                                    pairs = data_str.split("|")
+                                else:
+                                    pairs = data_str.split("&")
+                                for pair in pairs:
+                                    if "=" in pair:
+                                        key, value = pair.split("=", 1)
+                                        if key.startswith(("field_", "var_")):
+                                            env[key] = value
+                                        elif key == "action":
+                                            env["var_action"] = value
+                                        else:
+                                            env[f"field_{key}"] = value
                     except Exception as e:
                         RNS.log(f"Error parsing request data: {e}", RNS.LOG_ERROR)
                 result = subprocess.run(  # noqa: S603
