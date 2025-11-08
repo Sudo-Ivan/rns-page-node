@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as fh:
 
 setup(
     name="rns-page-node",
-    version="1.1.0",
+    version="1.2.0",
     author="Sudo-Ivan",
     author_email="",
     description="A simple way to serve pages and files over the Reticulum network.",
@@ -16,7 +16,7 @@ setup(
     license="GPL-3.0",
     python_requires=">=3.9",
     install_requires=[
-        "rns>=1.0.0,<1.5.0",
+        "rns>=1.0.1,<1.5.0",
     ],
     entry_points={
         "console_scripts": [
