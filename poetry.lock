@@ -178,14 +178,14 @@ cp2110 = ["hidapi"]
 
 [[package]]
 name = "rns"
-version = "1.0.1"
+version = "1.0.2"
 description = "Self-configuring, encrypted and resilient mesh networking stack for LoRa, packet radio, WiFi and everything in between"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "rns-1.0.1-py3-none-any.whl", hash = "sha256:aa77b4c8e1b6899117666e1e55b05b3250416ab5fea2826254358ae320e8b3ed"},
-    {file = "rns-1.0.1.tar.gz", hash = "sha256:f45ea52b065be09b8e2257425b6fcde1a49899ea41aee349936d182aa1844b26"},
+    {file = "rns-1.0.2-py3-none-any.whl", hash = "sha256:723bcf0a839025060ff680c4202b09fa766b35093a4a08506bb85485b8a1f154"},
+    {file = "rns-1.0.2.tar.gz", hash = "sha256:19c025dadc4a85fc37c751e0e892f446456800ca8c434e007c25d8fd6939687e"},
 ]
 
 [package.dependencies]
@@ -224,4 +224,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "c30da1264c924dddbf8fb26e3f1bc6705e265db33c9633769692afa72241f478"
+content-hash = "b4dfe6fb593dfebf019cc1e5a71b3502bf1e6c82d54a0dbfb2a4c8c548eb90d7"
