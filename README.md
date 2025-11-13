@@ -10,8 +10,7 @@ A simple way to serve pages and files over the [Reticulum network](https://retic
 
 ## Features
 
-- Static and Dynamic pages.
-- Serve files
+- Serves pages and files.
 - Simple
 
 ## To-Do
@@ -36,20 +35,22 @@ uv venv
 source .venv/bin/activate
 uv pip install rns-page-node
 
-# Git
+# Pipx via Git
 
 pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
 ```
+
+## Usage
 
 ```bash
 # will use current directory for pages and files
 rns-page-node
 ```
 
-## Usage
+or
 
 ```bash
-rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
+rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 3600
 ```
 
 ### Docker/Podman
