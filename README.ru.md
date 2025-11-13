@@ -1,49 +1,49 @@
 # RNS Page Node
 
+[English](README.md)
+
 Простой способ для раздачи страниц и файлов через сеть [Reticulum](https://reticulum.network/). Прямая замена для узлов [NomadNet](https://github.com/markqvist/NomadNet), которые в основном служат для раздачи страниц и файлов.
 
-## Использование
+## Особенности
+- Раздача страниц и файлов.
+- Простота
+
+## Установка
 
 ```bash
 # Pip
 # Может потребоваться --break-system-packages
-
 pip install rns-page-node
 
 # Pipx
-
 pipx install rns-page-node
 
 # uv
-
 uv venv
 source .venv/bin/activate
 uv pip install rns-page-node
 
-# Git
-
+# Pipx через Git
 pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
-```
 
+```
+## Использование
 ```bash
 # будет использовать текущий каталог для страниц и файлов
 rns-page-node
 ```
 
-## Использование
-
+или
 ```bash
-rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
+rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 3600
 ```
 
 ### Docker/Podman
-
 ```bash
 docker run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config:/app/node-config -v ./config:/root/.reticulum ghcr.io/sudo-ivan/rns-page-node:latest
 ```
 
-### Docker/Podman без root
-
+### Docker/Podman без root-доступа
 ```bash
 mkdir -p ./pages ./files ./node-config ./config
 chown -R 1000:1000 ./pages ./files ./node-config ./config
@@ -53,28 +53,25 @@ podman run -it --rm -v ./pages:/app/pages -v ./files:/app/files -v ./node-config
 Монтирование томов необязательно, вы также можете скопировать страницы и файлы в контейнер с помощью `podman cp` или `docker cp`.
 
 ## Сборка
-
 ```bash
 make build
 ```
 
 Сборка wheels:
-
 ```bash
 make wheel
 ```
 
 ### Сборка Wheels в Docker
-
 ```bash
 make docker-wheels
 ```
 
 ## Страницы
 
-Поддерживаются динамические страницы, но парсинг данных запроса пока не реализован.
+Поддерживаются динамические страницы, но разбор данных запроса пока не реализован.
 
-## Опции
+## Параметры
 
 ```
 -c, --config: Путь к файлу конфигурации Reticulum.
@@ -91,4 +88,3 @@ make docker-wheels
 ## Лицензия
 
 Этот проект включает части кодовой базы [NomadNet](https://github.com/markqvist/NomadNet), которая лицензирована под GNU General Public License v3.0 (GPL-3.0). Как производная работа, этот проект также распространяется на условиях GPL-3.0. Полный текст лицензии смотрите в файле [LICENSE](LICENSE).
-
