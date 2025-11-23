@@ -184,52 +184,27 @@ class PageNode:
             is_script = False
         if is_script and os.access(str(file_path), os.X_OK):
             try:
-                env = os.environ.copy()
-                if remote_identity:
-                    env["remote_identity"] = RNS.hexrep(
+                env_map = {}
+                if "PATH" in os.environ:
+                    env_map["PATH"] = os.environ["PATH"]
+                if _link_id is not None:
+                    env_map["link_id"] = RNS.hexrep(_link_id, delimit=False)
+                if remote_identity is not None:
+                    env_map["remote_identity"] = RNS.hexrep(
                         remote_identity.hash,
                         delimit=False,
                     )
-                if data:
-                    try:
-                        RNS.log(f"Processing request data: {data} (type: {type(data)})", RNS.LOG_DEBUG)
-                        if isinstance(data, dict):
-                            RNS.log(f"Data is dictionary with {len(data)} items", RNS.LOG_DEBUG)
-                            for key, value in data.items():
-                                if isinstance(value, str):
-                                    if key.startswith(("field_", "var_")):
-                                        env[key] = value
-                                        RNS.log(f"Set env[{key}] = {value}", RNS.LOG_DEBUG)
-                                    elif key == "action":
-                                        env["var_action"] = value
-                                        RNS.log(f"Set env[var_action] = {value}", RNS.LOG_DEBUG)
-                                    else:
-                                        env[f"field_{key}"] = value
-                                        RNS.log(f"Set env[field_{key}] = {value}", RNS.LOG_DEBUG)
-                        elif isinstance(data, bytes):
-                            data_str = data.decode("utf-8")
-                            RNS.log(f"Data is bytes, decoded to: {data_str}", RNS.LOG_DEBUG)
-                            if data_str:
-                                if "|" in data_str and "&" not in data_str:
-                                    pairs = data_str.split("|")
-                                else:
-                                    pairs = data_str.split("&")
-                                for pair in pairs:
-                                    if "=" in pair:
-                                        key, value = pair.split("=", 1)
-                                        if key.startswith(("field_", "var_")):
-                                            env[key] = value
-                                        elif key == "action":
-                                            env["var_action"] = value
-                                        else:
-                                            env[f"field_{key}"] = value
-                    except Exception as e:
-                        RNS.log(f"Error parsing request data: {e}", RNS.LOG_ERROR)
+                if data is not None and isinstance(data, dict):
+                    for e in data:
+                        if isinstance(e, str) and (
+                            e.startswith("field_") or e.startswith("var_")
+                        ):
+                            env_map[e] = data[e]
                 result = subprocess.run(  # noqa: S603
                     [str(file_path)],
                     stdout=subprocess.PIPE,
                     check=True,
-                    env=env,
+                    env=env_map,
                 )
                 return result.stdout
             except Exception as e:
