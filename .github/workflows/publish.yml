@@ -1,5 +1,14 @@
 name: Publish Python 🐍 distribution 📦 to PyPI
 
+# This workflow creates immutable releases:
+# 1. Build packages
+# 2. Publish to PyPI (only on tag push)
+# 3. After successful PyPI publish:
+#    - Sign artifacts
+#    - Check if GitHub release exists (idempotent)
+#    - Create release with all artifacts atomically
+# This ensures releases cannot be modified once published.
+
 on:
   push:
     tags:
@@ -83,18 +92,27 @@ jobs:
         inputs: >-
           ./dist/*.tar.gz
           ./dist/*.whl
-    - name: Create GitHub Release
+    - name: Check if release exists
+      id: check_release
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release $GITHUB_REF_NAME already exists, skipping creation"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release $GITHUB_REF_NAME does not exist, will create"
+        fi
+      continue-on-error: true
+    - name: Create GitHub Release with artifacts
+      if: steps.check_release.outputs.exists != 'true'
       env:
         GITHUB_TOKEN: ${{ github.token }}
       run: >-
         gh release create
         "$GITHUB_REF_NAME"
         --repo "$GITHUB_REPOSITORY"
-        --notes ""
-    - name: Upload artifact signatures to GitHub Release
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      run: >-
-        gh release upload
-        "$GITHUB_REF_NAME" dist/**
-        --repo "$GITHUB_REPOSITORY" 
+        --title "Release $GITHUB_REF_NAME"
+        --notes "PyPI: https://pypi.org/project/rns-page-node/$GITHUB_REF_NAME/"
+        dist/* 
