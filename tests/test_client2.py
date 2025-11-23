@@ -34,7 +34,11 @@ server_identity = RNS.Identity.recall(destination_hash)
 print(f"Recalled server identity for {DESTINATION_HEX}")
 
 destination = RNS.Destination(
-    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node",
+    server_identity,
+    RNS.Destination.OUT,
+    RNS.Destination.SINGLE,
+    "nomadnetwork",
+    "node",
 )
 link = RNS.Link(destination)
 

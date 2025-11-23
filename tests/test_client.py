@@ -20,7 +20,11 @@ server_identity = RNS.Identity.from_file(identity_file)
 
 # Create a destination to the server node
 destination = RNS.Destination(
-    server_identity, RNS.Destination.OUT, RNS.Destination.SINGLE, "nomadnetwork", "node",
+    server_identity,
+    RNS.Destination.OUT,
+    RNS.Destination.SINGLE,
+    "nomadnetwork",
+    "node",
 )
 
 # Ensure we know a path to the destination
@@ -38,11 +42,15 @@ done_event = threading.Event()
 
 # Test data for environment variables
 test_data_dict = {
-    'var_field_test': 'dictionary_value',
-    'var_field_message': 'hello_world',
-    'var_action': 'test_action'
+    "var_field_test": "dictionary_value",
+    "var_field_message": "hello_world",
+    "var_action": "test_action",
 }
-test_data_bytes = b'field_bytes_test=bytes_value|field_bytes_message=test_bytes|action=bytes_action'
+test_data_dict2 = {
+    "field_username": "testuser",
+    "field_message": "hello_from_form",
+    "var_action": "submit",
+}
 
 
 # Callback for page response
@@ -57,6 +65,7 @@ def on_page(response):
     responses["page"] = text
     check_responses()
 
+
 # Callback for page response with dictionary data
 def on_page_dict(response):
     data = response.response
@@ -69,20 +78,27 @@ def on_page_dict(response):
     responses["page_dict"] = text
     check_responses()
 
-# Callback for page response with bytes data
-def on_page_bytes(response):
+
+# Callback for page response with second dict data
+def on_page_dict2(response):
     data = response.response
     if isinstance(data, bytes):
         text = data.decode("utf-8")
     else:
         text = str(data)
-    print("Received page (bytes data):")
+    print("Received page (dict2 data):")
     print(text)
-    responses["page_bytes"] = text
+    responses["page_dict2"] = text
     check_responses()
 
+
 def check_responses():
-    if "page" in responses and "page_dict" in responses and "page_bytes" in responses and "file" in responses:
+    if (
+        "page" in responses
+        and "page_dict" in responses
+        and "page_dict2" in responses
+        and "file" in responses
+    ):
         done_event.set()
 
 
@@ -120,10 +136,10 @@ def on_file(response):
 def on_link_established(link):
     # Test page without data
     link.request("/page/index.mu", None, response_callback=on_page)
-    # Test page with dictionary data (simulates MeshChat)
+    # Test page with dictionary data (simulates var_ prefixed data)
     link.request("/page/index.mu", test_data_dict, response_callback=on_page_dict)
-    # Test page with bytes data (URL-encoded style)
-    link.request("/page/index.mu", test_data_bytes, response_callback=on_page_bytes)
+    # Test page with form field data (simulates field_ prefixed data)
+    link.request("/page/index.mu", test_data_dict2, response_callback=on_page_dict2)
     # Test file serving
     link.request("/file/text.txt", None, response_callback=on_file)
 
@@ -137,10 +153,10 @@ if not done_event.wait(timeout=30):
     print("Test timed out.", file=sys.stderr)
     sys.exit(1)
 
+
 # Validate test results
 def validate_test_results():
     """Validate that all responses contain expected content"""
-
     # Check basic page response (no data)
     if "page" not in responses:
         print("ERROR: No basic page response received", file=sys.stderr)
@@ -161,23 +177,35 @@ def validate_test_results():
 
     dict_content = responses["page_dict"]
     if "var_field_test" not in dict_content or "dictionary_value" not in dict_content:
-        print("ERROR: Dictionary data page should contain processed environment variables", file=sys.stderr)
+        print(
+            "ERROR: Dictionary data page should contain processed environment variables",
+            file=sys.stderr,
+        )
         return False
     if "33aff86b736acd47dca07e84630fd192" not in dict_content:
-        print("ERROR: Dictionary data page should show mock remote identity", file=sys.stderr)
+        print(
+            "ERROR: Dictionary data page should show mock remote identity",
+            file=sys.stderr,
+        )
         return False
 
-    # Check page with bytes data
-    if "page_bytes" not in responses:
-        print("ERROR: No bytes data page response received", file=sys.stderr)
+    # Check page with second dictionary data (form fields)
+    if "page_dict2" not in responses:
+        print("ERROR: No dict2 data page response received", file=sys.stderr)
         return False
 
-    bytes_content = responses["page_bytes"]
-    if "field_bytes_test" not in bytes_content or "bytes_value" not in bytes_content:
-        print("ERROR: Bytes data page should contain processed environment variables", file=sys.stderr)
+    dict2_content = responses["page_dict2"]
+    if "field_username" not in dict2_content or "testuser" not in dict2_content:
+        print(
+            "ERROR: Dict2 data page should contain processed environment variables",
+            file=sys.stderr,
+        )
         return False
-    if "33aff86b736acd47dca07e84630fd192" not in bytes_content:
-        print("ERROR: Bytes data page should show mock remote identity", file=sys.stderr)
+    if "33aff86b736acd47dca07e84630fd192" not in dict2_content:
+        print(
+            "ERROR: Dict2 data page should show mock remote identity",
+            file=sys.stderr,
+        )
         return False
 
     # Check file response
@@ -191,6 +219,7 @@ def validate_test_results():
         return False
 
     return True
+
 
 if validate_test_results():
     print("All tests passed! Environment variable processing works correctly.")
