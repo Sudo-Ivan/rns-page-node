@@ -9,13 +9,13 @@ DOCKER_BUILD_LOAD := $(shell docker buildx version >/dev/null 2>&1 && echo "dock
 all: build
 
 build: clean
-	python3 setup.py sdist bdist_wheel
+	python3 -m build
 
 sdist:
-	python3 setup.py sdist
+	python3 -m build --sdist
 
 wheel:
-	python3 setup.py bdist_wheel
+	python3 -m build --wheel
 
 clean:
 	rm -rf build dist *.egg-info
