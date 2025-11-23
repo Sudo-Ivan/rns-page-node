@@ -43,7 +43,7 @@ class PageNode:
             identity: RNS Identity for the node
             pagespath: Path to directory containing .mu pages
             filespath: Path to directory containing files to serve
-            announce_interval: Seconds between announcements (default: 360)
+            announce_interval: Minutes between announcements (default: 360) == 6 hours
             name: Display name for the node (optional)
             page_refresh_interval: Seconds between page rescans (0 = disabled)
             file_refresh_interval: Seconds between file rescans (0 = disabled)
@@ -240,7 +240,7 @@ class PageNode:
     def _announce_loop(self):
         try:
             while not self._stop_event.is_set():
-                if time.time() - self.last_announce > self.announce_interval:
+                if time.time() - self.last_announce > self.announce_interval * 60:
                     if self.name:
                         self.destination.announce(app_data=self.name.encode("utf-8"))
                     else:
@@ -322,7 +322,7 @@ def main():
         "--announce-interval",
         dest="announce_interval",
         type=int,
-        help="Announce interval in seconds",
+        help="Announce interval in minutes",
         default=360,
     )
     parser.add_argument(
