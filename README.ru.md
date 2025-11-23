@@ -35,10 +35,32 @@ pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
 rns-page-node
 ```
 
-или
+или с параметрами командной строки:
 ```bash
 rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
 ```
+
+или с файлом конфигурации:
+```bash
+rns-page-node /путь/к/config.conf
+```
+
+### Файл Конфигурации
+
+Вы можете использовать файл конфигурации для сохранения настроек. См. `config.example` для примера.
+
+Формат файла конфигурации - простые пары `ключ=значение`:
+
+```
+# Строки комментариев начинаются с #
+node-name=Мой Page Node
+pages-dir=./pages
+files-dir=./files
+identity-dir=./node-config
+announce-interval=360
+```
+
+Порядок приоритета: Аргументы командной строки > Файл конфигурации > Значения по умолчанию
 
 ### Docker/Podman
 ```bash
@@ -82,15 +104,19 @@ make docker-wheels
 ## Параметры
 
 ```
--c, --config: Путь к файлу конфигурации Reticulum.
--n, --node-name: Имя узла.
--p, --pages-dir: Каталог для раздачи страниц.
--f, --files-dir: Каталог для раздачи файлов.
--i, --identity-dir: Каталог для сохранения идентификационных данных узла.
--a, --announce-interval: Интервал анонсирования присутствия узла (в минутах, по умолчанию: 360) == 6 часов.
--r, --page-refresh-interval: Интервал обновления страниц (в секундах).
--f, --file-refresh-interval: Интервал обновления файлов (в секундах).
--l, --log-level: Уровень логирования.
+Позиционные аргументы:
+  node_config             Путь к файлу конфигурации rns-page-node
+
+Необязательные аргументы:
+  -c, --config            Путь к файлу конфигурации Reticulum
+  -n, --node-name         Имя узла
+  -p, --pages-dir         Каталог для раздачи страниц
+  -f, --files-dir         Каталог для раздачи файлов
+  -i, --identity-dir      Каталог для сохранения идентификационных данных узла
+  -a, --announce-interval Интервал анонсирования присутствия узла (в минутах, по умолчанию: 360 = 6 часов)
+  --page-refresh-interval Интервал обновления страниц (в секундах, 0 = отключено)
+  --file-refresh-interval Интервал обновления файлов (в секундах, 0 = отключено)
+  -l, --log-level         Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 ```
 
 ## Лицензия
