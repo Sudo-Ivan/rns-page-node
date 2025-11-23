@@ -37,7 +37,7 @@ rns-page-node
 
 или
 ```bash
-rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 3600
+rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
 ```
 
 ### Docker/Podman
@@ -87,9 +87,9 @@ make docker-wheels
 -p, --pages-dir: Каталог для раздачи страниц.
 -f, --files-dir: Каталог для раздачи файлов.
 -i, --identity-dir: Каталог для сохранения идентификационных данных узла.
--a, --announce-interval: Интервал анонсирования присутствия узла.
--r, --page-refresh-interval: Интервал обновления страниц.
--f, --file-refresh-interval: Интервал обновления файлов.
+-a, --announce-interval: Интервал анонсирования присутствия узла (в минутах, по умолчанию: 360) == 6 часов.
+-r, --page-refresh-interval: Интервал обновления страниц (в секундах).
+-f, --file-refresh-interval: Интервал обновления файлов (в секундах).
 -l, --log-level: Уровень логирования.
 ```
 

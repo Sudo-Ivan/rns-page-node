@@ -47,7 +47,7 @@ rns-page-node
 or
 
 ```bash
-rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 3600
+rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
 ```
 
 ### Docker/Podman
@@ -102,9 +102,9 @@ This enables forums, chats, and other interactive applications compatible with N
 -p, --pages-dir: The directory to serve pages from.
 -f, --files-dir: The directory to serve files from.
 -i, --identity-dir: The directory to persist the node's identity.
--a, --announce-interval: The interval to announce the node's presence.
--r, --page-refresh-interval: The interval to refresh pages.
--f, --file-refresh-interval: The interval to refresh files.
+-a, --announce-interval: The interval to announce the node's presence (in minutes, default: 360) == 6 hours.
+-r, --page-refresh-interval: The interval to refresh pages (in seconds).
+-f, --file-refresh-interval: The interval to refresh files (in seconds).
 -l, --log-level: The logging level.
 ```
 
