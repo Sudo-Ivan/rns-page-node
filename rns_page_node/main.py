@@ -24,6 +24,46 @@ You are not authorised to carry out the request.
 """
 
 
+def load_config(config_file):
+    """Load configuration from a plain text config file.
+
+    Config format is simple key=value pairs, one per line.
+    Lines starting with # are comments and are ignored.
+    Empty lines are ignored.
+
+    Args:
+        config_file: Path to the config file
+
+    Returns:
+        Dictionary of configuration values
+
+    """
+    config = {}
+    try:
+        with open(config_file, encoding="utf-8") as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    RNS.log(
+                        f"Invalid config line {line_num} in {config_file}: {line}",
+                        RNS.LOG_WARNING,
+                    )
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip()
+                if key and value:
+                    config[key] = value
+        RNS.log(f"Loaded configuration from {config_file}", RNS.LOG_INFO)
+    except FileNotFoundError:
+        RNS.log(f"Config file not found: {config_file}", RNS.LOG_ERROR)
+    except Exception as e:
+        RNS.log(f"Error reading config file {config_file}: {e}", RNS.LOG_ERROR)
+    return config
+
+
 class PageNode:
     """A Reticulum page node that serves .mu pages and files over RNS."""
 
@@ -290,6 +330,12 @@ def main():
     """Run the RNS page node application."""
     parser = argparse.ArgumentParser(description="Minimal Reticulum Page Node")
     parser.add_argument(
+        "node_config",
+        nargs="?",
+        help="Path to rns-page-node config file",
+        default=None,
+    )
+    parser.add_argument(
         "-c",
         "--config",
         dest="configpath",
@@ -356,14 +402,46 @@ def main():
     )
     args = parser.parse_args()
 
-    configpath = args.configpath
-    pages_dir = args.pages_dir
-    files_dir = args.files_dir
-    node_name = args.node_name
-    announce_interval = args.announce_interval
-    identity_dir = args.identity_dir
-    page_refresh_interval = args.page_refresh_interval
-    file_refresh_interval = args.file_refresh_interval
+    config = {}
+    if args.node_config:
+        config = load_config(args.node_config)
+
+    def get_config_value(arg_value, arg_default, config_key, value_type=str):
+        """Get value from CLI args, config file, or default.
+
+        Priority: CLI arg > config file > default
+        """
+        if arg_value != arg_default:
+            return arg_value
+        if config_key in config:
+            try:
+                if value_type == int:
+                    return int(config[config_key])
+                return config[config_key]
+            except ValueError:
+                RNS.log(
+                    f"Invalid {value_type.__name__} value for {config_key}: {config[config_key]}",
+                    RNS.LOG_WARNING,
+                )
+        return arg_default
+
+    configpath = get_config_value(args.configpath, None, "reticulum-config")
+    pages_dir = get_config_value(args.pages_dir, str(Path.cwd() / "pages"), "pages-dir")
+    files_dir = get_config_value(args.files_dir, str(Path.cwd() / "files"), "files-dir")
+    node_name = get_config_value(args.node_name, None, "node-name")
+    announce_interval = get_config_value(
+        args.announce_interval, 360, "announce-interval", int,
+    )
+    identity_dir = get_config_value(
+        args.identity_dir, str(Path.cwd() / "node-config"), "identity-dir",
+    )
+    page_refresh_interval = get_config_value(
+        args.page_refresh_interval, 0, "page-refresh-interval", int,
+    )
+    file_refresh_interval = get_config_value(
+        args.file_refresh_interval, 0, "file-refresh-interval", int,
+    )
+    log_level = get_config_value(args.log_level, "INFO", "log-level")
 
     RNS.Reticulum(configpath)
     Path(identity_dir).mkdir(parents=True, exist_ok=True)
