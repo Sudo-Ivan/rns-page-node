@@ -1,0 +1,31 @@
+# rns-page-node configuration file
+# Lines starting with # are comments
+# Format: key=value
+
+# Reticulum config directory path
+# reticulum-config=/path/to/reticulum/config
+
+# Node display name
+node-name=My Page Node
+
+# Pages directory
+pages-dir=./pages
+
+# Files directory
+files-dir=./files
+
+# Node identity directory
+identity-dir=./node-config
+
+# Announce interval in minutes (default: 360 = 6 hours)
+announce-interval=360
+
+# Page refresh interval in seconds (0 = disabled)
+page-refresh-interval=300
+
+# File refresh interval in seconds (0 = disabled)
+file-refresh-interval=300
+
+# Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+log-level=INFO
+
