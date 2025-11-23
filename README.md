@@ -44,11 +44,34 @@ pipx install git+https://github.com/Sudo-Ivan/rns-page-node.git
 rns-page-node
 ```
 
-or
+or with command-line options:
 
 ```bash
 rns-page-node --node-name "Page Node" --pages-dir ./pages --files-dir ./files --identity-dir ./node-config --announce-interval 360
 ```
+
+or with a config file:
+
+```bash
+rns-page-node /path/to/config.conf
+```
+
+### Configuration File
+
+You can use a configuration file to persist settings. See `config.example` for an example.
+
+Config file format is simple `key=value` pairs:
+
+```
+# Comment lines start with #
+node-name=My Page Node
+pages-dir=./pages
+files-dir=./files
+identity-dir=./node-config
+announce-interval=360
+```
+
+Priority order: Command-line arguments > Config file > Defaults
 
 ### Docker/Podman
 
@@ -97,15 +120,19 @@ This enables forums, chats, and other interactive applications compatible with N
 ## Options
 
 ```
--c, --config: The path to the Reticulum config file.
--n, --node-name: The name of the node.
--p, --pages-dir: The directory to serve pages from.
--f, --files-dir: The directory to serve files from.
--i, --identity-dir: The directory to persist the node's identity.
--a, --announce-interval: The interval to announce the node's presence (in minutes, default: 360) == 6 hours.
--r, --page-refresh-interval: The interval to refresh pages (in seconds).
--f, --file-refresh-interval: The interval to refresh files (in seconds).
--l, --log-level: The logging level.
+Positional arguments:
+  node_config             Path to rns-page-node config file
+
+Optional arguments:
+  -c, --config            Path to the Reticulum config file
+  -n, --node-name         Name of the node
+  -p, --pages-dir         Directory to serve pages from
+  -f, --files-dir         Directory to serve files from
+  -i, --identity-dir      Directory to persist the node's identity
+  -a, --announce-interval Interval to announce the node's presence (in minutes, default: 360 = 6 hours)
+  --page-refresh-interval Interval to refresh pages (in seconds, 0 = disabled)
+  --file-refresh-interval Interval to refresh files (in seconds, 0 = disabled)
+  -l, --log-level         Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 ```
 
 ## License
