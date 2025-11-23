@@ -10,12 +10,9 @@ A simple way to serve pages and files over the [Reticulum network](https://retic
 
 ## Features
 
-- Serves pages and files.
-- Simple
-
-## To-Do
-
-- Parameter parsing for forums, chat etc...
+- Serves pages and files over RNS
+- Dynamic page support with environment variables
+- Form data and request parameter parsing
 
 ## Usage
 
@@ -89,7 +86,13 @@ make docker-wheels
 
 ## Pages
 
-Supports dynamic pages but not request data parsing yet.
+Supports dynamic executable pages with full request data parsing. Pages can receive:
+- Form fields via `field_*` environment variables
+- Link variables via `var_*` environment variables
+- Remote identity via `remote_identity` environment variable
+- Link ID via `link_id` environment variable
+
+This enables forums, chats, and other interactive applications compatible with NomadNet clients.
 
 ## Options
 
