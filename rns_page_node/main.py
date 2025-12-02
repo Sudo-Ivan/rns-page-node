@@ -124,9 +124,10 @@ class PageNode:
 
     def register_pages(self):
         """Scan pages directory and register request handlers for all .mu files."""
+        pages = self._scan_pages(self.pagespath)
+
         with self._lock:
-            self.servedpages = []
-            self._scan_pages(self.pagespath)
+            self.servedpages = pages
 
         pagespath = Path(self.pagespath)
 
@@ -137,7 +138,7 @@ class PageNode:
                 allow=RNS.Destination.ALLOW_ALL,
             )
 
-        for full_path in self.servedpages:
+        for full_path in pages:
             rel = full_path[len(str(pagespath)) :]
             if not rel.startswith("/"):
                 rel = "/" + rel
@@ -150,13 +151,14 @@ class PageNode:
 
     def register_files(self):
         """Scan files directory and register request handlers for all files."""
+        files = self._scan_files(self.filespath)
+
         with self._lock:
-            self.servedfiles = []
-            self._scan_files(self.filespath)
+            self.servedfiles = files
 
         filespath = Path(self.filespath)
 
-        for full_path in self.servedfiles:
+        for full_path in files:
             rel = full_path[len(str(filespath)) :]
             if not rel.startswith("/"):
                 rel = "/" + rel
@@ -170,23 +172,31 @@ class PageNode:
 
     def _scan_pages(self, base):
         base_path = Path(base)
+        if not base_path.exists():
+            return []
+        served = []
         for entry in base_path.iterdir():
             if entry.name.startswith("."):
                 continue
             if entry.is_dir():
-                self._scan_pages(str(entry))
+                served.extend(self._scan_pages(entry))
             elif entry.is_file() and not entry.name.endswith(".allowed"):
-                self.servedpages.append(str(entry))
+                served.append(str(entry))
+        return served
 
     def _scan_files(self, base):
         base_path = Path(base)
+        if not base_path.exists():
+            return []
+        served = []
         for entry in base_path.iterdir():
             if entry.name.startswith("."):
                 continue
             if entry.is_dir():
-                self._scan_files(str(entry))
+                served.extend(self._scan_files(entry))
             elif entry.is_file():
-                self.servedfiles.append(str(entry))
+                served.append(str(entry))
+        return served
 
     @staticmethod
     def serve_default_index(
@@ -217,16 +227,21 @@ class PageNode:
         if not str(file_path).startswith(str(pagespath)):
             return DEFAULT_NOTALLOWED.encode("utf-8")
         try:
-            with file_path.open("rb") as _f:
-                first_line = _f.readline()
-            is_script = first_line.startswith(b"#!")
-        except Exception:
-            is_script = False
+            with file_path.open("rb") as file_handle:
+                first_line = file_handle.readline()
+                is_script = first_line.startswith(b"#!")
+                if not is_script:
+                    file_handle.seek(0)
+                    return file_handle.read()
+        except FileNotFoundError:
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+        except OSError as err:
+            RNS.log(f"Error reading page {file_path}: {err}", RNS.LOG_ERROR)
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+
         if is_script and os.access(str(file_path), os.X_OK):
             try:
-                env_map = {}
-                if "PATH" in os.environ:
-                    env_map["PATH"] = os.environ["PATH"]
+                env_map = os.environ.copy()
                 if _link_id is not None:
                     env_map["link_id"] = RNS.hexrep(_link_id, delimit=False)
                 if remote_identity is not None:
@@ -249,8 +264,18 @@ class PageNode:
                 return result.stdout
             except Exception as e:
                 RNS.log(f"Error executing script page: {e}", RNS.LOG_ERROR)
-        with file_path.open("rb") as f:
-            return f.read()
+        try:
+            return self._read_file_bytes(file_path)
+        except FileNotFoundError:
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+        except OSError as err:
+            RNS.log(f"Error reading page fallback {file_path}: {err}", RNS.LOG_ERROR)
+            return DEFAULT_NOTALLOWED.encode("utf-8")
+
+    @staticmethod
+    def _read_file_bytes(file_path):
+        with file_path.open("rb") as file_handle:
+            return file_handle.read()
 
     def serve_file(
         self,
@@ -278,15 +303,33 @@ class PageNode:
         """Handle new link connections."""
 
     def _announce_loop(self):
+        interval_seconds = max(self.announce_interval, 0) * 60
         try:
             while not self._stop_event.is_set():
-                if time.time() - self.last_announce > self.announce_interval * 60:
-                    if self.name:
-                        self.destination.announce(app_data=self.name.encode("utf-8"))
-                    else:
-                        self.destination.announce()
-                    self.last_announce = time.time()
-                time.sleep(1)
+                now = time.time()
+                if (
+                    self.last_announce == 0
+                    or now - self.last_announce >= interval_seconds
+                ):
+                    try:
+                        if self.name:
+                            self.destination.announce(
+                                app_data=self.name.encode("utf-8"),
+                            )
+                        else:
+                            self.destination.announce()
+                        self.last_announce = time.time()
+                    except Exception as announce_error:
+                        RNS.log(
+                            f"Error during announce: {announce_error}", RNS.LOG_ERROR,
+                        )
+                wait_time = max(
+                    (self.last_announce + interval_seconds) - time.time()
+                    if self.last_announce
+                    else 0,
+                    1,
+                )
+                self._stop_event.wait(min(wait_time, 60))
         except Exception as e:
             RNS.log(f"Error in announce loop: {e}", RNS.LOG_ERROR)
 
@@ -296,17 +339,37 @@ class PageNode:
                 now = time.time()
                 if (
                     self.page_refresh_interval > 0
-                    and now - self.last_page_refresh > self.page_refresh_interval
+                    and now - self.last_page_refresh >= self.page_refresh_interval
                 ):
                     self.register_pages()
-                    self.last_page_refresh = now
+                    self.last_page_refresh = time.time()
                 if (
                     self.file_refresh_interval > 0
-                    and now - self.last_file_refresh > self.file_refresh_interval
+                    and now - self.last_file_refresh >= self.file_refresh_interval
                 ):
                     self.register_files()
-                    self.last_file_refresh = now
-                time.sleep(1)
+                    self.last_file_refresh = time.time()
+
+                wait_candidates = []
+                if self.page_refresh_interval > 0:
+                    wait_candidates.append(
+                        max(
+                            (self.last_page_refresh + self.page_refresh_interval)
+                            - time.time(),
+                            0.5,
+                        ),
+                    )
+                if self.file_refresh_interval > 0:
+                    wait_candidates.append(
+                        max(
+                            (self.last_file_refresh + self.file_refresh_interval)
+                            - time.time(),
+                            0.5,
+                        ),
+                    )
+
+                wait_time = min(wait_candidates) if wait_candidates else 1.0
+                self._stop_event.wait(min(wait_time, 60))
         except Exception as e:
             RNS.log(f"Error in refresh loop: {e}", RNS.LOG_ERROR)
 
@@ -430,18 +493,39 @@ def main():
     files_dir = get_config_value(args.files_dir, str(Path.cwd() / "files"), "files-dir")
     node_name = get_config_value(args.node_name, None, "node-name")
     announce_interval = get_config_value(
-        args.announce_interval, 360, "announce-interval", int,
+        args.announce_interval,
+        360,
+        "announce-interval",
+        int,
     )
     identity_dir = get_config_value(
-        args.identity_dir, str(Path.cwd() / "node-config"), "identity-dir",
+        args.identity_dir,
+        str(Path.cwd() / "node-config"),
+        "identity-dir",
     )
     page_refresh_interval = get_config_value(
-        args.page_refresh_interval, 0, "page-refresh-interval", int,
+        args.page_refresh_interval,
+        0,
+        "page-refresh-interval",
+        int,
     )
     file_refresh_interval = get_config_value(
-        args.file_refresh_interval, 0, "file-refresh-interval", int,
+        args.file_refresh_interval,
+        0,
+        "file-refresh-interval",
+        int,
     )
     log_level = get_config_value(args.log_level, "INFO", "log-level")
+
+    # Set RNS log level based on command line argument
+    log_level_map = {
+        "CRITICAL": RNS.LOG_CRITICAL,
+        "ERROR": RNS.LOG_ERROR,
+        "WARNING": RNS.LOG_WARNING,
+        "INFO": RNS.LOG_INFO,
+        "DEBUG": RNS.LOG_DEBUG,
+    }
+    RNS.loglevel = log_level_map.get(log_level.upper(), RNS.LOG_INFO)
 
     RNS.Reticulum(configpath)
     Path(identity_dir).mkdir(parents=True, exist_ok=True)
