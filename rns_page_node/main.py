@@ -171,6 +171,7 @@ class PageNode:
             )
 
     def _scan_pages(self, base):
+        """Return a list of .mu page paths under the given directory."""
         base_path = Path(base)
         if not base_path.exists():
             return []
@@ -185,6 +186,7 @@ class PageNode:
         return served
 
     def _scan_files(self, base):
+        """Return all file paths under the given directory."""
         base_path = Path(base)
         if not base_path.exists():
             return []
@@ -274,6 +276,7 @@ class PageNode:
 
     @staticmethod
     def _read_file_bytes(file_path):
+        """Read a file's bytes and return the contents."""
         with file_path.open("rb") as file_handle:
             return file_handle.read()
 
@@ -303,6 +306,7 @@ class PageNode:
         """Handle new link connections."""
 
     def _announce_loop(self):
+        """Periodically announce the node until shutdown is requested."""
         interval_seconds = max(self.announce_interval, 0) * 60
         try:
             while not self._stop_event.is_set():
@@ -334,6 +338,7 @@ class PageNode:
             RNS.log(f"Error in announce loop: {e}", RNS.LOG_ERROR)
 
     def _refresh_loop(self):
+        """Refresh page and file registrations at configured intervals."""
         try:
             while not self._stop_event.is_set():
                 now = time.time()
@@ -478,7 +483,7 @@ def main():
             return arg_value
         if config_key in config:
             try:
-                if value_type == int:
+                if value_type is int:
                     return int(config[config_key])
                 return config[config_key]
             except ValueError:
