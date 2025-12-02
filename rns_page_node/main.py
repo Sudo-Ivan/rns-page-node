@@ -171,7 +171,7 @@ class PageNode:
             )
 
     def _scan_pages(self, base):
-        """Return a list of .mu page paths under the given directory."""
+        """Return a list of page paths under the given directory, excluding .allowed files."""
         base_path = Path(base)
         if not base_path.exists():
             return []
@@ -228,13 +228,16 @@ class PageNode:
 
         if not str(file_path).startswith(str(pagespath)):
             return DEFAULT_NOTALLOWED.encode("utf-8")
+        is_script = False
+        file_content = None
         try:
             with file_path.open("rb") as file_handle:
                 first_line = file_handle.readline()
                 is_script = first_line.startswith(b"#!")
+                file_handle.seek(0)
                 if not is_script:
-                    file_handle.seek(0)
                     return file_handle.read()
+                file_content = file_handle.read()
         except FileNotFoundError:
             return DEFAULT_NOTALLOWED.encode("utf-8")
         except OSError as err:
@@ -266,6 +269,8 @@ class PageNode:
                 return result.stdout
             except Exception as e:
                 RNS.log(f"Error executing script page: {e}", RNS.LOG_ERROR)
+        if file_content is not None:
+            return file_content
         try:
             return self._read_file_bytes(file_path)
         except FileNotFoundError:
@@ -323,9 +328,10 @@ class PageNode:
                         else:
                             self.destination.announce()
                         self.last_announce = time.time()
-                    except Exception as announce_error:
+                    except (TypeError, ValueError) as announce_error:
                         RNS.log(
-                            f"Error during announce: {announce_error}", RNS.LOG_ERROR,
+                            f"Error during announce: {announce_error}",
+                            RNS.LOG_ERROR,
                         )
                 wait_time = max(
                     (self.last_announce + interval_seconds) - time.time()
