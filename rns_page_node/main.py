@@ -129,7 +129,7 @@ class PageNode:
         with self._lock:
             self.servedpages = pages
 
-        pagespath = Path(self.pagespath)
+        pagespath = Path(self.pagespath).resolve()
 
         if not (pagespath / "index.mu").is_file():
             self.destination.register_request_handler(
@@ -139,10 +139,12 @@ class PageNode:
             )
 
         for full_path in pages:
-            rel = full_path[len(str(pagespath)) :]
-            if not rel.startswith("/"):
-                rel = "/" + rel
-            request_path = f"/page{rel}"
+            page_path = Path(full_path).resolve()
+            try:
+                rel = page_path.relative_to(pagespath).as_posix()
+            except ValueError:
+                continue
+            request_path = f"/page/{rel}"
             self.destination.register_request_handler(
                 request_path,
                 response_generator=self.serve_page,
@@ -156,13 +158,15 @@ class PageNode:
         with self._lock:
             self.servedfiles = files
 
-        filespath = Path(self.filespath)
+        filespath = Path(self.filespath).resolve()
 
         for full_path in files:
-            rel = full_path[len(str(filespath)) :]
-            if not rel.startswith("/"):
-                rel = "/" + rel
-            request_path = f"/file{rel}"
+            file_path = Path(full_path).resolve()
+            try:
+                rel = file_path.relative_to(filespath).as_posix()
+            except ValueError:
+                continue
+            request_path = f"/file/{rel}"
             self.destination.register_request_handler(
                 request_path,
                 response_generator=self.serve_file,
